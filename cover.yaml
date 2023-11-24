@@ -1,0 +1,85 @@
+esphome:
+  name: cover
+  friendly_name: cover
+  platformio_options:
+    board_build.flash_mode: dio
+    board_build.mcu: esp32c3
+
+esp32:
+  board: esp32-c3-devkitm-1
+  variant: esp32c3
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  hardware_uart: USB_SERIAL_JTAG
+  level: DEBUG # defaults to DEBUG, NONE ERROR WARN INFO DEBUG VERBOSE VERY_VERBOSE
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "D/3uDolgFaZy9b7Y1TYDaDNWtpAHb9mXNaovsphP6WA="
+
+ota:
+  password: "8579165d2aa49681efdf4f8e9d1d18c7"
+
+wifi:
+  ssid: LINJIA
+  password: 050208linjia
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Cover Fallback Hotspot"
+    password: "H8DZC5gVL97g"
+
+captive_portal:
+
+switch:
+  - id: open_cover_switch
+    name: Open Switch
+    platform: gpio
+    pin: GPIO19
+
+  - id: close_cover_switch
+    name: Close Switch
+    platform: gpio
+    pin: GPIO6
+
+cover:
+  - platform: time_based
+    name: "Time-Based Cover"
+
+    open_action:
+      - switch.turn_on: open_cover_switch
+    open_duration: 30seconds
+
+    close_action:
+      - switch.turn_on: close_cover_switch
+    close_duration: 1min
+
+    stop_action:
+      - switch.turn_off: open_cover_switch
+      - switch.turn_off: close_cover_switch
+
+remote_transmitter:
+  - id: t1
+    pin:
+      number: 21
+      inverted: True
+    carrier_duty_percent: 50%
+
+  - id: t2
+    pin:
+      number: 20
+      inverted: True
+    carrier_duty_percent: 50%
+
+remote_receiver:
+  pin: 18
+  dump: all
+  # Settings to optimize recognition of RF devices
+  tolerance: 50%
+  filter: 250us
+  idle: 10ms
+  buffer_size: 2kb

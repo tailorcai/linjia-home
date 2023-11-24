@@ -1,0 +1,158 @@
+esphome:
+  name: fresh-air-sys
+  platformio_options:
+    board_build.flash_mode: dio
+    board_build.mcu: esp32c3
+
+  on_boot:
+    priority: 600
+    then:
+      - lambda: |-
+          gpio_set_direction(GPIO_NUM_12, GPIO_MODE_OUTPUT);//写
+          gpio_set_direction(GPIO_NUM_13, GPIO_MODE_OUTPUT);//写
+
+esp32:
+  board: esp32-c3-devkitm-1
+  variant: esp32c3
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  hardware_uart: USB_SERIAL_JTAG
+  level: DEBUG
+
+# Enable Home Assistant API
+api:
+  password: ""
+
+ota:
+  password: ""
+
+wifi:
+  ssid: "LINJIA"
+  password: "050208linjia"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Fresh-Air-Sys Fallback Hotspot"
+    password: "vW3VkY5aY6lh"
+
+captive_portal:
+
+globals:
+  - id: locker
+    type: int
+    initial_value: "0" 
+
+light:
+  - platform: status_led
+    name: "Switch state"
+    internal: true
+    output: fake_status_led
+
+binary_sensor:
+  # physical button
+  # click to cycle speed(including stop)
+  - platform: gpio
+    id: touch_button
+    pin: 
+      number: GPIO8
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    filters:
+      - delayed_on: 10ms
+    on_click:
+      then:
+        - if:
+            condition:
+              lambda: "return id(locker)==0;"
+            then:
+              - fan.cycle_speed: air_fan
+              - globals.set:
+                  id: locker
+                  value: "1"
+              - repeat: 
+                  count: 10
+                  then:
+                    - output.turn_on: blink_led
+                    - delay: 150ms
+                    - output.turn_off: blink_led
+                    - delay: 150ms
+              - globals.set:
+                  id: locker
+                  value: "0"
+
+
+    on_multi_click:
+      - timing:
+          - ON for at least 2s
+        then:
+          - if:   # only when fan is running
+              condition:
+                lambda: "return id(air_fan).state>0;"
+              then:
+                - switch.toggle: switch_heating
+
+output:
+  - platform: template
+    id: blink_led
+    type: binary
+    write_action:
+      - lambda: |-
+          // esphome don't allow using 12 & 13 for esp32c3, but my device is ok
+          gpio_set_level(GPIO_NUM_12, state);
+
+  - platform: template
+    id: fake_status_led
+    type: binary
+    write_action:
+      - lambda: |-
+          // esphome don't allow using 12 & 13 for esp32c3, but my device is ok
+          gpio_set_level(GPIO_NUM_13, state);
+
+  - platform: template
+    id: speed_level
+    type: float
+    write_action:
+      - if:
+          condition:
+            lambda: "return state>0;"
+          then:
+            - output.turn_on: pin_on_off
+          else:
+            - output.turn_off: pin_on_off
+            - switch.turn_off: switch_heating
+      
+      - if:
+          condition:
+            lambda: "return state>0.6;"
+          then:
+            - output.turn_on: pin_high_speed
+          else:
+            - output.turn_off: pin_high_speed
+
+  - platform: gpio
+    pin: 18
+    id: pin_on_off
+
+  - platform: gpio
+    pin: 1
+    id: pin_high_speed
+
+switch:
+  - platform: gpio
+    name: "Air heating"
+    pin: 0
+    id: switch_heating
+    restore_mode: ALWAYS_OFF
+
+fan:
+  - platform: speed
+    output: speed_level
+    name: "Air Input Fan"
+    id: air_fan
+    speed_count: 2
+    restore_mode: RESTORE_DEFAULT_ON

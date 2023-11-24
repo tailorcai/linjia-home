@@ -1,0 +1,252 @@
+esphome:
+  name: cat-ha
+  friendly_name: cat-home
+  # platformio_options:
+  #   board_build.flash_mode: dio
+  #   board_build.mcu: esp32c3
+  on_boot:
+    priority: 600
+    then:
+      - lambda: |-
+          gpio_set_direction(GPIO_NUM_12, GPIO_MODE_OUTPUT);//写
+          gpio_set_direction(GPIO_NUM_13, GPIO_MODE_OUTPUT);//写
+
+esp32:
+  board: nodemcu-32s #esp32-c3-devkitm-1
+  # variant: esp32c3
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  # hardware_uart: USB_SERIAL_JTAG
+  level: DEBUG # defaults to DEBUG, NONE ERROR WARN INFO DEBUG VERBOSE VERY_VERBOSE
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "D/3uDolgFaZy9b7Y1TYDaDNWtpAHb9mXNaovsphP6WA="
+
+ota:
+  password: "8579165d2aa49681efdf4f8e9d1d18c7"
+
+wifi:
+  ssid: LINJIA
+  password: 050208linjia
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "CatHA Fallback Hotspot"
+    password: "H8DZC5gVL97g"
+
+captive_portal:
+
+globals:
+  - id: g_saved_speed
+    type: int
+    restore_value: no
+    initial_value: '0'
+  # - id: g_visited
+  #   type: int
+  #   initial_value: '0'
+  
+
+script:
+  - id: delay_check
+    then:
+      - if:
+          condition:
+            and:
+              - binary_sensor.is_off: room1_sensor
+              - binary_sensor.is_off: room2_sensor
+          then:
+            - if:
+                condition:
+                  not:
+                    - script.is_running: full_speed_60s
+                then:
+                  script.execute: full_speed_60s
+
+  - id: full_speed_60s
+    then:
+      - lambda: |-          
+          id(g_saved_speed) = id(cat_home_fan).speed;
+          auto call = id(cat_home_fan).turn_on();
+          call.set_speed(4);
+          call.perform();
+      - delay: 60s
+      - lambda: |-
+          auto call = id(cat_home_fan).turn_on();
+          call.set_speed(id(g_saved_speed));
+          call.perform();
+
+light:
+  - platform: status_led
+    name: "Switch state"
+    internal: true
+    output: fake_status_led
+
+binary_sensor:
+  - platform: gpio
+    pin: 21
+    # name: "Cat's presence room1"
+    id: room1_sensor
+    filters:
+      delayed_off: 15s
+    on_release:
+      then:        
+        - script.execute: delay_check
+
+  - platform: gpio
+    pin: 22
+    id: room2_sensor
+    # name: "Cat's presence room2"
+    filters:
+      delayed_off: 15s
+    on_release:
+      then:
+        - script.execute: delay_check
+
+  # physical button
+  # click to cycle speed(including stop)
+  - platform: gpio
+    id: touch_button
+    pin: 
+      number: GPIO2
+      mode:
+        input: true
+        pullup: true
+    filters:
+      - delayed_on: 10ms
+    on_click:
+      then:
+        - fan.cycle_speed: cat_home_fan
+
+output:
+  - platform: template
+    id: blink_led
+    type: binary
+    write_action:
+      - lambda: |-
+          // esphome don't allow using 12 & 13 for esp32c3, but my device is ok
+          gpio_set_level(GPIO_NUM_12, state);
+
+  - platform: template
+    id: fake_status_led
+    type: binary
+    write_action:
+      - lambda: |-
+          // esphome don't allow using 12 & 13 for esp32c3, but my device is ok
+          gpio_set_level(GPIO_NUM_13, state);
+          
+  - platform: template
+    id: speed_level
+    type: float
+    write_action:
+      # - if:
+      #     condition:
+      #       lambda: 'return state;'
+      #     then:                
+      - output.turn_on: fan_pwm_ledc
+      - output.set_level:
+          id: fan_pwm_ledc
+          level: !lambda |-
+            return state?(state * 0.75/4 + 0.25) : 0; 
+          # else:
+          #   - output.set_level:
+          #       id: fan_pwm_ledc
+          #       level: 0
+          #   - output.turn_off: fan_pwm_ledc
+
+      - if:
+          condition:
+            lambda: 'return state>=.25;'
+          then:
+            - output.turn_on: level1
+          else:
+            - output.turn_off: level1
+
+      - if:
+          condition:
+            lambda: 'return state>=.5;'
+          then:
+            - output.turn_on: level2
+          else:
+            - output.turn_off: level2
+
+      - if:
+          condition:
+            lambda: 'return state>=.75;'
+          then:
+            - output.turn_on: level3
+          else:
+            - output.turn_off: level3
+
+      - if:
+          condition:
+            lambda: 'return state>=1;'
+          then:
+            - output.turn_on: level4
+          else:
+            - output.turn_off: level4
+
+      - logger.log:
+          format: "speed_level value %f"
+          args: ['state']
+
+  - platform: ledc
+    pin: GPIO19
+    id: fan_pwm_ledc
+    frequency: "1000Hz" #for real fan, 15000Hz
+
+  - platform: gpio
+    pin: GPIO13
+    id: level1
+
+  - platform: gpio
+    pin: GPIO12
+    id: level2
+
+  - platform: gpio
+    pin: GPIO14
+    id: level3
+
+  - platform: gpio
+    pin: GPIO27
+    id: level4
+
+# fan device
+fan:
+  - platform: speed
+    output: speed_level
+    name: "Cat's Fan"
+    id: cat_home_fan
+    speed_count: 4
+    restore_mode: RESTORE_DEFAULT_ON
+    # on_speed_set:
+    #   then:
+    #     - if:
+    #         condition: 
+    #           lambda: "return id(cat_home_fan).state;"
+    #         then:
+    #           - output.turn_on: fan_pwm_ledc
+    #           - output.set_level:
+    #               id: fan_pwm_ledc
+    #               level: !lambda |-
+    #                 return id(cat_home_fan).speed * 0.75/4 + 0.25; 
+    #         else:
+    #           - output.set_level:
+    #               id: fan_pwm_ledc
+    #               level: 0
+    #           - output.turn_off: fan_pwm_ledc
+
+    # on_turn_off:
+    #   then:
+    #     - output.set_level:
+    #         id: fan_pwm_ledc
+    #         level: 0
+    #     - output.turn_off: fan_pwm_ledc
+
+
+      
+
