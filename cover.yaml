@@ -1,19 +1,25 @@
 esphome:
   name: cover
   friendly_name: cover
-  platformio_options:
-    board_build.flash_mode: dio
-    board_build.mcu: esp32c3
+  # platformio_options:
+  #   board_build.flash_mode: dio
+  #   board_build.mcu: esp32c3
+
+# esp32:
+#   board: esp32-c3-devkitm-1
+#   variant: esp32c3
+#   framework:
+#     type: esp-idf
+
 
 esp32:
-  board: esp32-c3-devkitm-1
-  variant: esp32c3
+  board: nodemcu-32s 
   framework:
     type: esp-idf
 
 # Enable logging
 logger:
-  hardware_uart: USB_SERIAL_JTAG
+  # hardware_uart: USB_SERIAL_JTAG
   level: DEBUG # defaults to DEBUG, NONE ERROR WARN INFO DEBUG VERBOSE VERY_VERBOSE
 
 # Enable Home Assistant API
@@ -35,16 +41,47 @@ wifi:
 
 captive_portal:
 
+
+# data: "0000 006D 0029 0000 00BC 003C 000E 001D 000E 001D 000E 001D 000E 001D 001C 000F 001C 000F 001C 000F 001C 0010 000E 001D 000E 001D 001C 000F 001C 000F 000E 001D 000E 001D 001C 000F 001C 0010 001C 000F 001C 000F 001C 000F 001C 000F 000E 001D 001C 000F 001C 000F 001C 0010 000D 001E 001C 0010 000D 001E 000E 001D 000E 001D 000E 001E 001B 0010 001B 0010 000D 001E 001C 0010 000D 001E 001B 000F 000D 001E 001B 0010 000D 001E 001C 0150"
+script:
+  - id: rf_up
+    then:
+      - remote_transmitter.transmit_pronto: #up code
+          data: "0000 006D 0029 0000 00BC 003C 000E 001D 000E 001D 000E 001D 000E 001D 001D 000E 001D 000E 001D 000E 001D 000E 000E 001D 000E 001D 001D 000E 001D 000E 000E 001D 000E 001D 001D 000E 001D 000E 001D 000E 001D 000E 001D 000E 001D 000E 000E 001D 001D 000E 001D 000E 001D 000E 000E 001D 001D 000E 000E 001D 000E 001D 000E 001D 000E 001D 000E 001D 000E 001D 000E 001D 000E 001D 000E 001D 001D 000E 000E 001D 000E 001D 000E 001D 001D 000E"
+          repeat:
+            times: 4
+            wait_time: 20ms
+
+  - id: rf_down
+    then:
+      - remote_transmitter.transmit_pronto: #down code
+          data: "0000 006D 0029 0000 00BC 003C 000E 001D 000E 001D 000E 001D 000E 001D 001D 000E 001D 000E 001D 000E 001D 000E 000E 001D 000E 001D 001D 000E 001D 000E 000E 001D 000E 001D 001D 000E 001D 000E 001D 000E 001D 000E 001D 000E 001D 000E 000E 001D 001D 000E 001D 000E 001D 000E 000E 001D 001D 000E 000E 001D 000E 001D 000E 001D 000E 001D 000E 001D 000E 001D 000E 001D 000E 001D 001D 000E 001D 000E 001D 000E 001D 000E 000E 001D 000E 001D"
+          repeat:
+            times: 4
+            wait_time: 20ms
+
+  - id: rf_stop
+    then:
+      - remote_transmitter.transmit_pronto: #stop code
+          data: "0000 006D 0029 0000 00BC 003C 000E 001D 000E 001D 000E 001D 000E 001D 001D 000E 001D 000E 001D 000E 001D 000E 000E 001D 000E 001D 001D 000E 001D 000E 000E 001D 000E 001D 001D 000E 001D 000E 001D 000E 001D 000E 001D 000E 001D 000E 000E 001D 001D 000E 001D 000E 001D 000E 000E 001D 001D 000E 000E 001D 000E 001D 000E 001D 000E 001D 000E 001D 000E 001D 000E 001D 001D 000E 000E 001D 001D 000E 000E 001D 001D 000E 000E 001D 001D 000E"
+          repeat:
+            times: 4
+            wait_time: 20ms
+
 switch:
   - id: open_cover_switch
-    name: Open Switch
-    platform: gpio
-    pin: GPIO19
+    platform: template
+    turn_on_action:
+      - script.execute: rf_up
+    turn_off_action:
+      - script.execute: rf_stop
 
   - id: close_cover_switch
-    name: Close Switch
-    platform: gpio
-    pin: GPIO6
+    platform: template
+    turn_on_action:
+      - script.execute: rf_down
+    turn_off_action:
+      - script.execute: rf_stop
 
 cover:
   - platform: time_based
@@ -52,34 +89,38 @@ cover:
 
     open_action:
       - switch.turn_on: open_cover_switch
-    open_duration: 30seconds
+    open_duration: 30s
 
     close_action:
       - switch.turn_on: close_cover_switch
-    close_duration: 1min
+    close_duration: 28s
 
     stop_action:
-      - switch.turn_off: open_cover_switch
-      - switch.turn_off: close_cover_switch
+      - script.execute: rf_stop
+
+# binary_sensor:
+#   - platform: gpio
+#     id: button
+#     pin: GPIO14
+#     on_press:
+#       - switch.turn_on: open_cover_switch
 
 remote_transmitter:
   - id: t1
-    pin:
-      number: 21
-      inverted: True
-    carrier_duty_percent: 50%
+    pin: 23
+    carrier_duty_percent: 100%
 
-  - id: t2
-    pin:
-      number: 20
-      inverted: True
-    carrier_duty_percent: 50%
+#   - id: t2
+#     pin:
+#       number: 20
+#       inverted: True
+#     carrier_duty_percent: 50%
 
-remote_receiver:
-  pin: 18
-  dump: all
-  # Settings to optimize recognition of RF devices
-  tolerance: 50%
-  filter: 250us
-  idle: 10ms
-  buffer_size: 2kb
+# remote_receiver:
+#   pin: 22
+#   dump: all
+#   # Settings to optimize recognition of RF devices
+#   tolerance: 50%
+#   filter: 250us
+#   idle: 10ms
+#   buffer_size: 2kb
