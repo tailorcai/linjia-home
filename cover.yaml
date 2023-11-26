@@ -11,7 +11,6 @@ esphome:
 #   framework:
 #     type: esp-idf
 
-
 esp32:
   board: nodemcu-32s 
   framework:
@@ -22,6 +21,9 @@ logger:
   # hardware_uart: USB_SERIAL_JTAG
   level: DEBUG # defaults to DEBUG, NONE ERROR WARN INFO DEBUG VERBOSE VERY_VERBOSE
 
+packages:
+  wifi: !include wifi.yaml
+
 # Enable Home Assistant API
 api:
   encryption:
@@ -30,14 +32,6 @@ api:
 ota:
   password: "8579165d2aa49681efdf4f8e9d1d18c7"
 
-wifi:
-  ssid: LINJIA
-  password: 050208linjia
-
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "Cover Fallback Hotspot"
-    password: "H8DZC5gVL97g"
 
 captive_portal:
 

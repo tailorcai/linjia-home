@@ -30,14 +30,8 @@ api:
 ota:
   password: "8579165d2aa49681efdf4f8e9d1d18c7"
 
-wifi:
-  ssid: LINJIA
-  password: 050208linjia
-
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "CatHA Fallback Hotspot"
-    password: "H8DZC5gVL97g"
+packages:
+  wifi: !include wifi.yaml
 
 captive_portal:
 
@@ -147,48 +141,76 @@ output:
       #     condition:
       #       lambda: 'return state;'
       #     then:                
-      - output.turn_on: fan_pwm_ledc
-      - output.set_level:
-          id: fan_pwm_ledc
-          level: !lambda |-
-            return state?(state * 0.75/4 + 0.25) : 0; 
-          # else:
-          #   - output.set_level:
-          #       id: fan_pwm_ledc
-          #       level: 0
-          #   - output.turn_off: fan_pwm_ledc
+      # - output.turn_on: fan_pwm_ledc
+      # - output.set_level:
+      #     id: fan_pwm_ledc
+      #     level: !lambda |-
+      #       return state?(state * 0.75/4 + 0.25) : 0; 
+      #     # else:
+      #     #   - output.set_level:
+      #     #       id: fan_pwm_ledc
+      #     #       level: 0
+      #     #   - output.turn_off: fan_pwm_ledc
 
-      - if:
-          condition:
-            lambda: 'return state>=.25;'
-          then:
-            - output.turn_on: level1
-          else:
-            - output.turn_off: level1
+      - lambda: |-
+          auto pwm = id(fan_pwm_ledc);
+          if( state == 0)
+            pwm->turn_off();
+          else {
+            pwm->turn_on();
+            pwm->set_level( state * 0.75/4 + 0.25 ); // 
+          }
 
-      - if:
-          condition:
-            lambda: 'return state>=.5;'
-          then:
-            - output.turn_on: level2
-          else:
-            - output.turn_off: level2
+          if( state >= 0.25 )
+            id(level1).turn_on();
+          else
+            id(level1).turn_off();
+          
+          if( state >= 0.5 )
+            id(level2).turn_on();
+          else
+            id(level2).turn_off();
 
-      - if:
-          condition:
-            lambda: 'return state>=.75;'
-          then:
-            - output.turn_on: level3
-          else:
-            - output.turn_off: level3
+          if( state >= 0.75 )
+            id(level3).turn_on();
+          else
+            id(level3).turn_off();
 
-      - if:
-          condition:
-            lambda: 'return state>=1;'
-          then:
-            - output.turn_on: level4
-          else:
-            - output.turn_off: level4
+          if( state >= 1 )
+            id(level4).turn_on();
+          else
+            id(level4).turn_off();
+      # - if:
+      #     condition:
+      #       lambda: 'return state>=.25;'
+      #     then:
+      #       - output.turn_on: level1
+      #     else:
+      #       - output.turn_off: level1
+
+      # - if:
+      #     condition:
+      #       lambda: 'return state>=.5;'
+      #     then:
+      #       - output.turn_on: level2
+      #     else:
+      #       - output.turn_off: level2
+
+      # - if:
+      #     condition:
+      #       lambda: 'return state>=.75;'
+      #     then:
+      #       - output.turn_on: level3
+      #     else:
+      #       - output.turn_off: level3
+
+      # - if:
+      #     condition:
+      #       lambda: 'return state>=1;'
+      #     then:
+      #       - output.turn_on: level4
+      #     else:
+      #       - output.turn_off: level4
 
       - logger.log:
           format: "speed_level value %f"

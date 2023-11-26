@@ -29,14 +29,8 @@ api:
 ota:
   password: ""
 
-wifi:
-  ssid: "LINJIA"
-  password: "050208linjia"
-
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "Fresh-Air-Sys Fallback Hotspot"
-    password: "vW3VkY5aY6lh"
+packages:
+  wifi: !include wifi.yaml
 
 captive_portal:
 
