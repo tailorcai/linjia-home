@@ -1,0 +1,108 @@
+esphome:
+  name: air-quality
+  platformio_options:
+    board_build.flash_mode: dio
+    board_build.mcu: esp32c3
+
+esp32:
+  board: esp32-c3-devkitm-1
+  variant: esp32c3
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  hardware_uart: USB_SERIAL_JTAG
+  level: DEBUG # defaults to DEBUG, NO
+
+# Enable Home Assistant API
+api:
+  password: ""
+
+ota:
+  password: ""
+
+packages:
+  wifi: !include wifi.yaml
+
+captive_portal:
+
+uart:
+  - id: uart_bus
+    rx_pin: 18
+    baud_rate: 9600
+    debug:
+      direction: RX
+      dummy_receiver: true    
+      after:
+        bytes: 6
+      sequence:
+        - lambda: |-
+            if( bytes[0] == 0x2C && bytes.size()>=6) {
+              uint8_t sum = 0;
+              for(auto it = bytes.begin();it != bytes.begin()+5;it++)
+                sum += *it;
+              if( sum == bytes[5]) {
+                int co2 = bytes[1]*256+bytes[2];
+                id(co2_sensor).publish_state(co2);
+                ESP_LOGD("co2", "CO2 = %d", co2 );
+              }
+              else {
+                ESP_LOGD("co2", "checksum error!" );
+                UARTDebug::log_hex(direction, bytes, 32);
+              }
+            }
+
+  - id: uart_pm
+    rx_pin: 6
+    baud_rate: 9600
+    debug:
+      direction: RX
+      dummy_receiver: true    
+      after:
+        delimiter: "\r"
+      sequence:
+        - lambda: |-
+            if( bytes.size()>=20 && bytes[0] == 0x4a && bytes[1] == 0x43 && bytes[19]==0xD ) {
+              float pm_array[2] = { 0., 0.};
+              std::memcpy( pm_array, bytes.data() + 2, 8);
+              // UARTDebug::log_hex(direction, bytes, 32);
+              id(pm2_5_sensor).publish_state(pm_array[0]);
+              id(pm10_sensor).publish_state(pm_array[1]);          
+            }
+
+sensor:
+  - platform: template
+    id: co2_sensor
+    name: "Co2 ppm"
+    update_interval: 5s
+    device_class: carbon_dioxide
+    state_class: measurement
+    unit_of_measurement: "ppm"
+
+  - platform: template
+    id: pm2_5_sensor
+    name: "PM2.5"
+    update_interval: 5s
+    unit_of_measurement: "µg/m³"
+    accuracy_decimals: 0
+    device_class: pm25
+    state_class: measurement
+
+  - platform: template
+    id: pm10_sensor
+    name: "PM10"
+    update_interval: 5s
+    unit_of_measurement: "µg/m³"
+    accuracy_decimals: 0
+    device_class: pm10    
+    state_class: measurement
+
+  - platform: dht
+    pin: GPIO8
+    model: DHT11
+    temperature:
+      name: "Living Room Temperature"
+    humidity:
+      name: "Living Room Humidity"
+    update_interval: 5s
