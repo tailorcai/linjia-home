@@ -3,6 +3,12 @@ esphome:
   platformio_options:
     board_build.flash_mode: dio
     board_build.mcu: esp32c3
+  on_boot:
+    priority: 600
+    then:
+      - lambda: |-
+          gpio_set_direction(GPIO_NUM_12, GPIO_MODE_OUTPUT);//写
+          gpio_set_direction(GPIO_NUM_13, GPIO_MODE_OUTPUT);//写
 
 esp32:
   board: esp32-c3-devkitm-1
@@ -27,9 +33,15 @@ packages:
 
 captive_portal:
 
+light:
+  - platform: status_led
+    name: "Switch state"
+    internal: true
+    output: fake_status_led
+
 uart:
   - id: uart_bus
-    rx_pin: 18
+    rx_pin: 19
     baud_rate: 9600
     debug:
       direction: RX
@@ -54,7 +66,7 @@ uart:
             }
 
   - id: uart_pm
-    rx_pin: 6
+    rx_pin: 8
     baud_rate: 9600
     debug:
       direction: RX
@@ -99,10 +111,19 @@ sensor:
     state_class: measurement
 
   - platform: dht
-    pin: GPIO8
+    pin: GPIO18
     model: DHT11
     temperature:
       name: "Living Room Temperature"
     humidity:
       name: "Living Room Humidity"
     update_interval: 5s
+
+output:
+  - platform: template
+    id: fake_status_led
+    type: binary
+    write_action:
+      - lambda: |-
+          // esphome don't allow using 12 & 13 for esp32c3, but my device is ok
+          gpio_set_level(GPIO_NUM_13, state);

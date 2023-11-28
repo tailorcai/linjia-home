@@ -83,11 +83,11 @@ cover:
 
     open_action:
       - switch.turn_on: open_cover_switch
-    open_duration: 30s
+    open_duration: 35s
 
     close_action:
       - switch.turn_on: close_cover_switch
-    close_duration: 28s
+    close_duration: 32s
 
     stop_action:
       - script.execute: rf_stop
