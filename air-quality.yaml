@@ -95,7 +95,7 @@ sensor:
   - platform: template
     id: pm2_5_sensor
     name: "PM2.5"
-    update_interval: 5s
+    # update_interval: 10m
     unit_of_measurement: "µg/m³"
     accuracy_decimals: 0
     device_class: pm25
@@ -104,7 +104,7 @@ sensor:
   - platform: template
     id: pm10_sensor
     name: "PM10"
-    update_interval: 5s
+    # update_interval: 10m
     unit_of_measurement: "µg/m³"
     accuracy_decimals: 0
     device_class: pm10    
@@ -127,3 +127,18 @@ output:
       - lambda: |-
           // esphome don't allow using 12 & 13 for esp32c3, but my device is ok
           gpio_set_level(GPIO_NUM_13, state);
+
+  - platform: template
+    id: pm25_enable
+    type: binary
+    write_action:
+      - lambda: |-
+          // esphome don't allow using 12 & 13 for esp32c3, but my device is ok
+          gpio_set_level(GPIO_NUM_12, state);          
+
+interval:
+  - interval: 600s
+    then:
+      - output.turn_on: pm25_enable
+      - delay: 60s
+      - output.turn_off: pm25_enable
