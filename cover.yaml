@@ -11,10 +11,10 @@ esphome:
 #   framework:
 #     type: esp-idf
 
-esp32:
-  board: nodemcu-32s 
-  framework:
-    type: esp-idf
+esp8266:
+  board: esp8285
+  # framework:
+  #   type: esp-idf
 
 # Enable logging
 logger:
@@ -26,11 +26,10 @@ packages:
 
 # Enable Home Assistant API
 api:
-  encryption:
-    key: "D/3uDolgFaZy9b7Y1TYDaDNWtpAHb9mXNaovsphP6WA="
+  password: ""
 
 ota:
-  password: "8579165d2aa49681efdf4f8e9d1d18c7"
+  password: ""
 
 
 captive_portal:
@@ -83,11 +82,11 @@ cover:
 
     open_action:
       - switch.turn_on: open_cover_switch
-    open_duration: 35s
+    open_duration: 40s
 
     close_action:
       - switch.turn_on: close_cover_switch
-    close_duration: 32s
+    close_duration: 37s
 
     stop_action:
       - script.execute: rf_stop
@@ -101,7 +100,7 @@ cover:
 
 remote_transmitter:
   - id: t1
-    pin: 23
+    pin: 2
     carrier_duty_percent: 100%
 
 #   - id: t2
