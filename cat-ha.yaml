@@ -4,12 +4,12 @@ esphome:
   # platformio_options:
   #   board_build.flash_mode: dio
   #   board_build.mcu: esp32c3
-  on_boot:
-    priority: 600
-    then:
-      - lambda: |-
-          gpio_set_direction(GPIO_NUM_12, GPIO_MODE_OUTPUT);//写
-          gpio_set_direction(GPIO_NUM_13, GPIO_MODE_OUTPUT);//写
+  # on_boot:
+  #   priority: 600
+  #   then:
+  #     - lambda: |-
+          # gpio_set_direction(GPIO_NUM_12, GPIO_MODE_OUTPUT);//写
+          # gpio_set_direction(GPIO_NUM_13, GPIO_MODE_OUTPUT);//写
 
 esp32:
   board: nodemcu-32s #esp32-c3-devkitm-1
@@ -74,11 +74,11 @@ script:
           call.set_speed(id(g_saved_speed));
           call.perform();
 
-light:
-  - platform: status_led
-    name: "Switch state"
-    internal: true
-    output: fake_status_led
+# light:
+#   - platform: status_led
+#     name: "Switch state"
+#     internal: true
+#     output: fake_status_led
 
 binary_sensor:
   - platform: gpio
@@ -117,21 +117,21 @@ binary_sensor:
         - fan.cycle_speed: cat_home_fan
 
 output:
-  - platform: template
-    id: blink_led
-    type: binary
-    write_action:
-      - lambda: |-
-          // esphome don't allow using 12 & 13 for esp32c3, but my device is ok
-          gpio_set_level(GPIO_NUM_12, state);
+  # - platform: template
+  #   id: blink_led
+  #   type: binary
+  #   write_action:
+  #     - lambda: |-
+  #         // esphome don't allow using 12 & 13 for esp32c3, but my device is ok
+  #         gpio_set_level(GPIO_NUM_12, state);
 
-  - platform: template
-    id: fake_status_led
-    type: binary
-    write_action:
-      - lambda: |-
-          // esphome don't allow using 12 & 13 for esp32c3, but my device is ok
-          gpio_set_level(GPIO_NUM_13, state);
+  # - platform: template
+  #   id: fake_status_led
+  #   type: binary
+  #   write_action:
+  #     - lambda: |-
+  #         // esphome don't allow using 12 & 13 for esp32c3, but my device is ok
+  #         gpio_set_level(GPIO_NUM_13, state);
           
   - platform: template
     id: speed_level
@@ -219,14 +219,14 @@ output:
   - platform: ledc
     pin: GPIO19
     id: fan_pwm_ledc
-    frequency: "1000Hz" #for real fan, 15000Hz
+    frequency: "15000Hz" #for real fan, 15000Hz
 
   - platform: gpio
     pin: GPIO13
     id: level1
 
   - platform: gpio
-    pin: GPIO12
+    pin: GPIO33
     id: level2
 
   - platform: gpio
