@@ -13,10 +13,17 @@ esphome:
                - voice_assistant.start_continuous:
 
 esp32:
-  board: esp32dev
+#  board: esp32dev
+  board: esp32-c3-devkitm-1
   framework:
     type: esp-idf
     version: recommended
+    # Custom sdkconfig options
+    sdkconfig_options:
+      COMPILER_OPTIMIZATION_SIZE: y
+    # Advanced tweaking options
+    advanced:
+      ignore_efuse_mac_crc: false
 
 # Enable logging
 logger:
@@ -29,23 +36,30 @@ ota:
 packages:
   wifi: !include wifi.yaml
 
-
+# EXPIREMENT: separate mic and speaker, but failed
 i2s_audio:
-  i2s_lrclk_pin: GPIO27
-  i2s_bclk_pin: GPIO26
+  - id: i2s_in
+    i2s_lrclk_pin: GPIO7 #GPIO27
+    i2s_bclk_pin: GPIO6  #GPIO26
+  - id: i2s_out
+    i2s_lrclk_pin: GPIO4 #GPIO33
+    i2s_bclk_pin: GPIO3 #GPIO32
 
 microphone:
   - platform: i2s_audio
     id: mic
     adc_type: external
-    i2s_din_pin: GPIO13
+    i2s_audio_id: i2s_in
+    i2s_din_pin: GPIO10 #GPIO13
     pdm: false
+    # channel: left
 
 speaker:
   - platform: i2s_audio
     id: big_speaker
     dac_type: external
-    i2s_dout_pin: GPIO25
+    i2s_dout_pin: GPIO5 #GPIO25
+    i2s_audio_id: i2s_out
     mode: mono
 
 voice_assistant:
@@ -53,9 +67,13 @@ voice_assistant:
   use_wake_word: false
   noise_suppression_level: 2
   auto_gain: 31dBFS
-  volume_multiplier: 2.0
+  volume_multiplier: 1.0
   speaker: big_speaker
   id: assist
+
+# remote_transmitter:
+#   pin: GPIO5
+#   carrier_duty_percent: 50%
 
 switch:
   - platform: template
@@ -75,3 +93,11 @@ switch:
     on_turn_off:
       - voice_assistant.stop
       - lambda: id(assist).set_use_wake_word(false);
+
+  # - platform: template
+  #   name: Sharp TV Power
+  #   turn_on_action:
+  #     - remote_transmitter.transmit_nec:
+  #       address: 0x1234
+  #       command: 0x78AB
+  #       command_repeats: 1
