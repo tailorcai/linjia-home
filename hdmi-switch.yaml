@@ -1,3 +1,4 @@
+# 接收sharp tv 遥控器操作，控制外部hdmi-switch设备
 esphome:
   name: hdmi-switch
   friendly_name: hdmi-switch
