@@ -1,0 +1,87 @@
+esphome:
+  name: hdmi-switch
+  friendly_name: hdmi-switch
+
+esp8266:
+  board: esp8285
+  # framework:
+  #   type: esp-idf
+
+# Enable logging
+logger:
+  # hardware_uart: USB_SERIAL_JTAG
+  level: DEBUG # defaults to DEBUG, NONE ERROR WARN INFO DEBUG VERBOSE VERY_VERBOSE
+
+packages:
+  wifi: !include wifi.yaml
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "Qv1ySV+0DT2Sam1cUiuA0OaX4uxtYoqnbAgtNmf/Zgk="
+
+ota:
+  password: ""
+
+
+captive_portal:
+
+
+# switch:
+#   - id: next_channel
+#     platform: template
+#     turn_on_action:
+#       - script.execute: rf_up
+#     turn_off_action:
+#       - script.execute: rf_stop
+
+# power on/off
+#[13:43:52][D][remote_receiver:059]: 10000 0110100010
+#[13:43:52][D][remote_receiver:059]: 10000 1001011101
+# left
+#[13:44:08][D][remote_receiver:059]: 10001 1011000010
+#[13:44:08][D][remote_receiver:059]: 10001 0100111101
+# right
+#[13:44:12][D][remote_receiver:059]: 10001 0011000010
+#[13:44:12][D][remote_receiver:059]: 10001 1100111101
+
+switch:
+  - platform: gpio
+    pin:
+      number: 2
+      inverted: true
+    id: sim_button
+    on_turn_on:
+    - delay: 200ms
+    - switch.turn_off: sim_button
+
+remote_receiver:
+  pin:
+    number: 0
+    inverted: true
+  on_raw:
+    lambda: |-
+      std::string _data;
+      if( x.size() > 30) {
+        for( int i=0;i<30;i+=2) {
+          int w = round((abs(x[i])+abs(x[i+1])) / 1000.0);
+          //ESP_LOGD("remote_receiver", "%d,%d",x[i],x[i+1] );
+          if( w == 1 ) {
+            // bit 0
+            _data.push_back('0');
+          }
+          else if( w == 2) {
+            // bit 1
+            _data.push_back('1');
+          }
+          else
+            _data += std::to_string(w) + ',';
+        }
+        if( _data.substr(0,5).compare("10001") == 0 && 
+            _data.substr(6,9).compare("011000010") == 0) { //TODO
+          auto btn = id(sim_button);
+          if(!btn->state) 
+            btn->turn_on();
+        }
+        ESP_LOGD("remote_receiver", "%s", _data.c_str() );
+      }
