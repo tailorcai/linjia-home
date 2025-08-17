@@ -5,3 +5,4 @@
 /secrets.yaml
 wifi.yaml
 *.bin
+*.elf

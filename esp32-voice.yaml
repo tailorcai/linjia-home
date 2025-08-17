@@ -41,9 +41,9 @@ i2s_audio:
   - id: i2s_in
     i2s_lrclk_pin: GPIO7 #GPIO27
     i2s_bclk_pin: GPIO6  #GPIO26
-  - id: i2s_out
-    i2s_lrclk_pin: GPIO4 #GPIO33
-    i2s_bclk_pin: GPIO3 #GPIO32
+  # - id: i2s_out
+  #   i2s_lrclk_pin: GPIO4 #GPIO33
+  #   i2s_bclk_pin: GPIO3 #GPIO32
 
 microphone:
   - platform: i2s_audio
@@ -59,7 +59,7 @@ speaker:
     id: big_speaker
     dac_type: external
     i2s_dout_pin: GPIO5 #GPIO25
-    i2s_audio_id: i2s_out
+    i2s_audio_id: i2s_in
     mode: mono
 
 voice_assistant:

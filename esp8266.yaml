@@ -1,0 +1,27 @@
+# e比特 8266 芯片测试
+esphome:
+  name: 8266-test
+  friendly_name: 8266test
+
+esp8266:
+  board: esp01_1m
+  framework:
+    version: recommended
+
+packages:
+  wifi: !include wifi.yaml
+
+api:
+  password: ""
+
+ota:
+  password: ""
+
+
+captive_portal:
+
+switch:
+  - id: test_switch
+    platform: gpio
+    pin: 2
+    name: "test_led"

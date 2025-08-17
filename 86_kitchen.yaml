@@ -1,0 +1,318 @@
+# Basic configuration for an ESP32 device
+esphome:
+  name: kitchen_86box
+  friendly_name: kitchen 86box
+
+# Hardware configuration
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+# Enable Home Assistant API
+api:
+
+logger:
+  level: DEBUG
+
+# Enable over-the-air updates
+ota:
+  platform: esphome
+
+# Connect to WiFi
+packages:
+  wifi: !include wifi.yaml
+
+  # Enable fallback hotspot if WiFi connection fails
+#  ap:
+
+# Enable web server
+web_server:
+
+spi:
+  clk_pin: 
+    number: GPIO39
+    allow_other_uses: true
+  mosi_pin: 
+    number: GPIO40
+    allow_other_uses: true
+  #miso_pin: GPIOXX
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+display:
+  - platform: st7701s
+    id: main_screen
+    dimensions:
+      width: 480
+      height: 480
+    init_sequence:
+      - 1 # Use canned sequence 1 (if available for ili9xxx)
+      - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x10] 
+      - [ 0xC0, 0x3B, 0x00]
+      - [ 0xC1, 0x0D, 0x02]
+      - [ 0xC2, 0x31, 0x05]
+      - [ 0xCD, 0x08]
+      - [0xB0, 0x00, 0x11, 0x18, 0x0E,0x11, 0x06, 0x07, 0x08,0x07, 0x22, 0x04, 0x12,0x0F, 0xAA, 0x31, 0x18] # Positive Voltage Gamma Control
+      - [ 0xB1, 0x00, 0x11, 0x19, 0x0E,0x12, 0x07, 0x08, 0x08,0x08, 0x22, 0x04, 0x11,0x11, 0xA9, 0x32, 0x18] # Negative Voltage Gamma Control
+      - [ 0xFF, 0x77, 0x01, 0x00, 0x00, 0x11]
+      - [ 0xB0, 0x60] #// Vop=4.7375v
+      - [ 0xB1, 0x32] #, // VCOM=32
+      - [ 0xB2, 0x07] #, // VGH=15v
+      - [ 0xB3, 0x80]
+      - [0xB5, 0x49] #// VGL=-10.17v
+      - [0xB7, 0x85]
+      - [ 0xB8, 0x21] #, // AVDD=6.6 & AVCL=-4.6
+      - [0xC1, 0x78]
+      - [0xC2, 0x78]
+      - [ 0xE0, 0x00, 0x1B, 0x02]
+      - [ 0xE1,0x08, 0xA0, 0x00, 0x00,0x07, 0xA0, 0x00, 0x00,0x00, 0x44, 0x44]
+      - [ 0xE2,0x11, 0x11, 0x44, 0x44,0xED, 0xA0, 0x00, 0x00,0xEC, 0xA0, 0x00, 0x00]
+      - [ 0xE3,0x00, 0x00, 0x11, 0x11]
+      - [ 0xE4, 0x44, 0x44]
+      - [ 0xE5,0x0A, 0xE9, 0xD8, 0xA0,0x0C, 0xEB, 0xD8, 0xA0,0x0E, 0xED, 0xD8, 0xA0,0x10, 0xEF, 0xD8, 0xA0]
+      - [ 0xE6, 0x00, 0x00, 0x11, 0x11]
+      - [ 0xE7, 0x44, 0x44]
+      - [ 0xE8, 0x09, 0xE8, 0xD8, 0xA0,0x0B, 0xEA, 0xD8, 0xA0,0x0D, 0xEC, 0xD8, 0xA0,0x0F, 0xEE, 0xD8, 0xA0]
+      - [ 0xEB,0x02, 0x00, 0xE4, 0xE4,0x88, 0x00, 0x40]
+      - [ 0xEC, 0x3C, 0x00]
+      - [ 0xED,0xAB, 0x89, 0x76, 0x54,0x02, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0x20,0x45, 0x67, 0x98, 0xBA]
+      - [ 0xFF, 0x77, 0x01, 0x00, 0x00, 0x13]     #//-----------VAP & VAN---------------
+      - [ 0xE5, 0xE4]
+      - [ 0xFF, 0x77, 0x01, 0x00, 0x00, 0x00]
+      - [ 0x21] #   // 0x20 normal, 0x21 IPS
+      - [ 0x3A, 0x60] #// 0x70 RGB888, 0x60 RGB666, 0x50 RGB565
+      - [ 0x11 ] #// Sleep Out
+      - delay 120ms
+      - [ 0x29 ] # Another example command
+
+    cs_pin: 
+      number: GPIO38
+      allow_other_uses: true
+
+    #reset_pin:
+    de_pin: 
+      number: GPIO40
+      allow_other_uses: true
+
+    hsync_pin:
+      number: GPIO38
+      allow_other_uses: true
+
+    vsync_pin:
+      number: GPIO39
+      allow_other_uses: true
+
+    pclk_pin: GPIO41
+    # Replace XX with the correct pin number
+    color_order: bgr
+    invert_colors: true
+    hsync_pulse_width: 8
+    hsync_front_porch: 10
+    hsync_back_porch: 50
+    vsync_pulse_width: 8
+    vsync_front_porch: 10
+    vsync_back_porch: 20
+    pclk_frequency: 12M
+    pclk_inverted: true
+    data_pins:
+      red:
+        - 46        #r1
+        - 03        #r2
+        - 08        #r3
+        - 18        #r4
+        - 17        #r5
+      green:
+        - 14        #g0
+        - 13        #g1
+        - 12        #g2
+        - 11        #g3
+        - 10        #g4
+        - 09        #g5
+      blue:
+        - 00        #b1
+        - 45        #b2
+        - 48        #b3
+        - 47        #b4
+        - 21        #b5
+
+    # lambda: |-
+    #   // Turn the whole display on
+    #   it.fill(COLOR_ON);
+    #   // Turn the whole display off
+    #   it.fill(COLOR_OFF);
+
+    #   // Turn a single pixel off at [50,60]
+    #   it.draw_pixel_at(50, 60, COLOR_OFF);
+
+    # show_test_card: true
+
+output:
+  - platform: ledc
+    pin: GPIO1
+    id: gpio_1
+
+light:
+  - platform: monochromatic
+    output: gpio_1
+    name: "背光灯"
+    id: display_backlight
+
+i2c:
+  sda: GPIO16
+  scl: GPIO15
+  scan: true
+  id: bus_a
+
+touchscreen:
+  - platform: gt911
+    id: my_touchscreen
+    display: main_screen
+
+    on_touch:
+      - lambda: |-
+          ESP_LOGI("cal", "x=%d, y=%d, x_raw=%d, y_raw=%0d",
+              touch.x,
+              touch.y,
+              touch.x_raw,
+              touch.y_raw
+              );
+      - output.set_level:
+          id: gpio_1
+          level: 100%
+      - lvgl.resume:
+      - script.execute: time_update
+    #on_update:
+    #on_release:
+time:
+  - platform: sntp
+    timezone: Asia/Shanghai
+    id: time_comp
+    servers:
+      - 192.168.0.100
+    on_time_sync:
+      - script.execute: time_update
+    on_time:
+      - minutes: '*'
+        seconds: 0
+        then:
+          - script.execute: time_update
+
+lvgl:
+  default_font: montserrat_24
+  style_definitions:
+    - id: date_style      # choose an ID for your definition
+      text_font: unscii_16
+      align: center
+      text_color: 0x000000
+      bg_opa: cover
+      radius: 8
+      pad_all: 4
+
+  on_idle:
+    - timeout: 30s
+      then:
+        - lvgl.page.show: clock_page
+    - timeout: 60s
+      then:
+        - light.turn_off: display_backlight
+        - lvgl.pause:
+
+  pages:
+    - id: clock_page
+      widgets:
+        - obj: # clock container
+            height: SIZE_CONTENT
+            width: 480
+            align: CENTER
+            pad_all: 0
+            border_width: 0
+            bg_color: 0xFFFFFF
+            widgets:
+              - meter: # clock face
+                  height: 440
+                  width: 440
+                  align: CENTER
+                  bg_opa: TRANSP
+                  border_width: 0
+                  text_color: 0x000000
+                  scales:
+                    - range_from: 0 # minutes scale
+                      range_to: 60
+                      angle_range: 360
+                      rotation: 270
+                      ticks:
+                        width: 2
+                        count: 61
+                        length: 20
+                        color: 0x000000
+                      indicators:
+                        - line:
+                            id: minute_hand
+                            width: 4
+                            color: 0xa6a6a6
+                            r_mod: -8
+                            value: 0
+                    - range_from: 1 # hours scale for labels
+                      range_to: 12
+                      angle_range: 330
+                      rotation: 300
+                      ticks:
+                        width: 2
+                        count: 12
+                        length: 2
+                        major:
+                          stride: 1
+                          width: 6
+                          length: 20
+                          color: 0xC0C0C0
+                          label_gap: 12
+                    - range_from: 0 # hi-res hours scale for hand
+                      range_to: 720
+                      angle_range: 360
+                      rotation: 270
+                      ticks:
+                        count: 0
+                      indicators:
+                        - line:
+                            id: hour_hand
+                            width: 8
+                            color: 0xa6a6a6
+                            r_mod: -60
+                            value: 0
+              - label:
+                  styles: date_style
+                  id: day_label
+                  y: -60
+              - label:
+                  id: date_label
+                  styles: date_style
+                  y: 60
+
+script:
+  - id: time_update
+    then:
+      - lvgl.indicator.update:
+          id: minute_hand
+          value: !lambda |-
+            return id(time_comp).now().minute;
+      - lvgl.indicator.update:
+          id: hour_hand
+          value: !lambda |-
+            auto now = id(time_comp).now();
+            return std::fmod(now.hour, 12) * 60 + now.minute;
+      - lvgl.label.update:
+          id: date_label
+          text: !lambda |-
+            static const char * const mon_names[] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
+            static char date_buf[8];
+            auto now = id(time_comp).now();
+            snprintf(date_buf, sizeof(date_buf), "%s %2d", mon_names[now.month-1], now.day_of_month);
+            return date_buf;
+      - lvgl.label.update:
+          id: day_label
+          text: !lambda |-
+            static const char * const day_names[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+            return day_names[id(time_comp).now().day_of_week - 1];

@@ -1,0 +1,33 @@
+esphome:
+  name: plant
+  friendly_name: plant
+
+esp8266:
+  board: esp8285
+
+# Enable logging
+logger:
+  # hardware_uart: USB_SERIAL_JTAG
+  level: DEBUG # defaults to DEBUG, NONE ERROR WARN INFO DEBUG VERBOSE VERY_VERBOSE
+
+packages:
+  wifi: !include wifi.yaml
+
+# Enable Home Assistant API
+api:
+  password: ""
+
+ota:
+  password: ""
+
+
+captive_portal:
+
+switch:
+  - id: buildin-led
+    platform: gpio
+    pin: 
+      number: 2
+      inverted: false
+    name: "led on board"
+
